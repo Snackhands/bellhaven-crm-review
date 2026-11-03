@@ -2275,11 +2275,14 @@ dialog > p {
 }
 .form-pair { grid-template-columns: minmax(160px, 2fr) minmax(0, 3fr); }
 .form-pair > label, .form-pair .tr-select { min-width: 0; width: 100%; }
+.schedule-time { min-width: 0; margin: 0; padding: 0; border: 0; }
+.schedule-time legend { margin-bottom: 7px; padding: 0; font-size: 11px; font-weight: 600; }
+.schedule-time-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .utc-clock { display: grid; gap: 3px; text-align: right; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .utc-clock strong { font-size: 12px; color: var(--forest); font-weight: 550; }
 .zone-clock { overflow-wrap: anywhere; }
 @media (max-width: 560px) {
-  .form-pair { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+  .form-pair { grid-template-columns: minmax(0, 1fr); }
   .dialog-title { gap: 8px; }
   .dialog-title h2 { font-size: 20px; }
   .dialog-header-actions { gap: 10px; }

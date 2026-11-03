@@ -193,6 +193,46 @@ function submitNamed() {
 }
 
 describe("future schedule controls", () => {
+  it("offers 24 hours and 60 minutes and composes the saved time", async () => {
+    const save = editor(existingSchedule({ startDate: "2026-11-04", time: "09:07" }));
+    const time = screen.getByRole("group", { name: "Time" });
+    const hour = within(time).getByRole("combobox", { name: "Hour" });
+    const minute = within(time).getByRole("combobox", { name: "Minute" });
+    expect(within(hour).getAllByRole("option").map((option) => option.textContent)).toEqual(
+      Array.from({ length: 24 }, (_, value) => String(value).padStart(2, "0")),
+    );
+    expect(within(minute).getAllByRole("option").map((option) => option.textContent)).toEqual(
+      Array.from({ length: 60 }, (_, value) => String(value).padStart(2, "0")),
+    );
+    fireEvent.change(hour, { target: { value: "18" } });
+    expect(within(minute).getByRole<HTMLOptionElement>("option", { name: "07" }).selected).toBe(true);
+    fireEvent.change(minute, { target: { value: "42" } });
+    submitNamed();
+    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ time: "18:42" }), "schedule-a"));
+  });
+  it("selects the first future minute when the current minute is unavailable in another hour", () => {
+    editor(existingSchedule({ startDate: "2026-11-03", time: "16:00" }));
+    const hour = screen.getByRole("combobox", { name: "Hour" });
+    const minute = screen.getByRole("combobox", { name: "Minute" });
+    expect(within(hour).getByRole("option", { name: "14" }).hasAttribute("disabled")).toBe(true);
+    expect(within(hour).getByRole("option", { name: "15" }).hasAttribute("disabled")).toBe(false);
+    fireEvent.change(hour, { target: { value: "15" } });
+    expect(within(minute).getByRole<HTMLOptionElement>("option", { name: "01" }).selected).toBe(true);
+    fireEvent.change(hour, { target: { value: "17" } });
+    expect(within(minute).getByRole<HTMLOptionElement>("option", { name: "01" }).selected).toBe(true);
+  });
+  it("disables a DST gap hour and only its unavailable minutes", () => {
+    vi.setSystemTime(new Date("2026-03-07T15:00:00Z"));
+    editor(existingSchedule({ startDate: "2026-03-08", time: "02:30", timezone: "America/New_York" }));
+    const hour = screen.getByRole("combobox", { name: "Hour" });
+    const minute = screen.getByRole("combobox", { name: "Minute" });
+    expect(within(hour).getByRole<HTMLOptionElement>("option", { name: "02" }).selected).toBe(true);
+    expect(within(hour).getByRole("option", { name: "02" }).hasAttribute("disabled")).toBe(true);
+    expect(within(minute).getAllByRole("option").every((option) => option.hasAttribute("disabled"))).toBe(true);
+    fireEvent.change(hour, { target: { value: "03" } });
+    expect(within(minute).getByRole<HTMLOptionElement>("option", { name: "30" }).selected).toBe(true);
+    expect(within(minute).getAllByRole("option").some((option) => option.hasAttribute("disabled"))).toBe(false);
+  });
   it("defaults to the next minute, advances past midnight, and skips the second folded hour", () => {
     expect(nextMinute(new Date("2026-11-03T23:59:30Z"), "UTC")).toEqual({ date: "2026-11-04", time: "00:00" });
     expect(nextMinute(new Date("2026-11-03T15:00:00Z"), "UTC")).toEqual({ date: "2026-11-03", time: "15:01" });
@@ -249,11 +289,11 @@ describe("future schedule controls", () => {
   });
   it("requires a future start after changing an old recurrence time or cadence", () => {
     const save = editor(existingSchedule());
-    fireEvent.change(screen.getByRole("combobox", { name: "Time" }), { target: { value: "10:00" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Hour" }), { target: { value: "10" } });
     expect(screen.getByRole("alert").textContent).toContain("future start");
     submitNamed();
     expect(save).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByRole("combobox", { name: "Time" }), { target: { value: "09:00" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Hour" }), { target: { value: "09" } });
     expect(screen.queryByRole("alert")).toBeNull();
     fireEvent.change(screen.getByRole("combobox", { name: "Cadence" }), { target: { value: "daily" } });
     expect(screen.getByRole("alert").textContent).toContain("future start");
@@ -270,9 +310,12 @@ describe("future schedule controls", () => {
   });
   it("disables elapsed minutes, rechecks timezone changes, and allows future dates", async () => {
     const save = editor(existingSchedule({ startDate: "2026-11-03", time: "16:00" }));
-    const time = screen.getByRole("combobox", { name: "Time" });
-    expect(within(time).getByRole("option", { name: "15:00" }).hasAttribute("disabled")).toBe(true);
-    expect(within(time).getByRole("option", { name: "15:01" }).hasAttribute("disabled")).toBe(false);
+    const hour = screen.getByRole("combobox", { name: "Hour" });
+    const minute = screen.getByRole("combobox", { name: "Minute" });
+    expect(within(hour).getByRole("option", { name: "14" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.change(hour, { target: { value: "15" } });
+    expect(within(minute).getByRole("option", { name: "00" }).hasAttribute("disabled")).toBe(true);
+    expect(within(minute).getByRole("option", { name: "01" }).hasAttribute("disabled")).toBe(false);
     fireEvent.change(screen.getByRole("combobox", { name: "Timezone" }), { target: { value: "Asia/Tokyo" } });
     expect(screen.getByRole("alert").textContent).toContain("future start");
     expect(screen.getByText(/Current time in Asia\/Tokyo/).textContent).toContain("2026-11-04");
@@ -284,7 +327,8 @@ describe("future schedule controls", () => {
     if (!fifth) throw new Error("Missing fifth day");
     fireEvent.click(fifth);
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(within(time).getByRole("option", { name: "00:00" }).hasAttribute("disabled")).toBe(false);
+    expect(within(hour).getByRole("option", { name: "00" }).hasAttribute("disabled")).toBe(false);
+    expect(within(minute).getByRole("option", { name: "00" }).hasAttribute("disabled")).toBe(false);
     submitNamed();
     await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ startDate: "2026-11-05", timezone: "Asia/Tokyo" }), "schedule-a"));
   });
@@ -306,7 +350,7 @@ describe("future schedule controls", () => {
     act(() => { vi.advanceTimersByTime(1000); });
     expect(screen.getByText(/Current time in UTC/).textContent).toContain("00:00:00 · 2026-11-04");
     expect(screen.getByRole("alert").textContent).toContain("future start");
-    expect(within(screen.getByRole("combobox", { name: "Time" })).getByRole("option", { name: "00:00" }).hasAttribute("disabled")).toBe(true);
+    expect(within(screen.getByRole("combobox", { name: "Minute" })).getByRole("option", { name: "00" }).hasAttribute("disabled")).toBe(true);
   });
 });
 
@@ -319,8 +363,9 @@ describe("hourly schedules", () => {
     expect(within(source).getByRole<HTMLOptionElement>("option", { name: /Fresh data/ }).selected).toBe(true);
     fireEvent.change(screen.getByRole("combobox", { name: "Cadence" }), { target: { value: "hourly" } });
     fireEvent.change(screen.getByRole("combobox", { name: "Timezone" }), { target: { value: "UTC" } });
-    const time = screen.getByRole("combobox", { name: "First run time" });
-    fireEvent.change(time, { target: { value: "20:25" } });
+    expect(screen.getByRole("group", { name: "First run time" })).toBeTruthy();
+    fireEvent.change(screen.getByRole("combobox", { name: "Hour" }), { target: { value: "20" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Minute" }), { target: { value: "25" } });
     expect(screen.getByText(/Repeats each hour at minute 25/).textContent).toContain("starting at the chosen date and time");
     submitNamed();
     await waitFor(() => expect(save).toHaveBeenCalledOnce());
@@ -335,7 +380,9 @@ describe("hourly schedules", () => {
     const resave = vi.fn(async () => undefined);
     render(<ScheduleEditor schedule={decoded} state={state} close={() => undefined} save={resave} />);
     expect(within(screen.getByRole("combobox", { name: "Cadence" })).getByRole<HTMLOptionElement>("option", { name: "Hourly" }).selected).toBe(true);
-    expect(within(screen.getByRole("combobox", { name: "First run time" })).getByRole<HTMLOptionElement>("option", { name: "20:25" }).selected).toBe(true);
+    expect(screen.getByRole("group", { name: "First run time" })).toBeTruthy();
+    expect(within(screen.getByRole("combobox", { name: "Hour" })).getByRole<HTMLOptionElement>("option", { name: "20" }).selected).toBe(true);
+    expect(within(screen.getByRole("combobox", { name: "Minute" })).getByRole<HTMLOptionElement>("option", { name: "25" }).selected).toBe(true);
     submitNamed();
     await waitFor(() => expect(resave).toHaveBeenCalledWith(body, "hourly-a"));
   });

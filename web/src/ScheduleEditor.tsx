@@ -16,6 +16,7 @@ import { localParts, occurrenceAt } from "../../shared/schedule-time";
 import { useClock } from "./Clock";
 
 const minuteTimes = Array.from({ length: 1440 }, (_, minute) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`);
+const hours = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"));
 
 export function minuteOccurrences(date: string, timezone: string) {
   return minuteTimes.map((time) => ({ time, at: occurrenceAt(date, time, timezone)?.getTime() }));
@@ -137,6 +138,21 @@ export default function ScheduleEditor({
   ));
   const today = localParts(now, timezone).date;
   const occurrences = useMemo(() => minuteOccurrences(startDate, timezone), [startDate, timezone]);
+  const selectedHour = time.slice(0, 2);
+  const selectedMinute = time.slice(3);
+  const hourOptions = hours.map((hour, index) => ({
+    hour,
+    minutes: occurrences.slice(index * 60, (index + 1) * 60),
+  }));
+  const minuteOptions = hourOptions[Number(selectedHour)]?.minutes ?? [];
+  function isFutureMinute({ at }: (typeof occurrences)[number]) {
+    return at !== undefined && at > now.getTime();
+  }
+  function changeHour(hour: string) {
+    const available = hourOptions.find((option) => option.hour === hour)?.minutes.filter(isFutureMinute) ?? [];
+    const next = available.find((option) => option.time.slice(3) === selectedMinute) ?? available[0];
+    setTime(next?.time ?? `${hour}:${selectedMinute}`);
+  }
   const unchangedStart = Boolean(schedule &&
     (schedule.startDate === undefined ? !startDateEdited : startDate === schedule.startDate) && time === schedule.time &&
     timezone === schedule.timezone && cadence === (schedule.cadence ?? "daily"));
@@ -311,16 +327,29 @@ export default function ScheduleEditor({
           Dates are inclusive.
         </p>
         <div className="form-pair">
-          <label>
-            {cadence === "hourly" ? "First run time" : "Time"}
-            <Select name="time" required value={time} onChange={(event) => setTime(event.target.value)}>
-              {occurrences.map(({ time: option, at }) => (
-                <option key={option} value={option} disabled={at === undefined || at <= now.getTime()}>
-                  {option}{at === undefined ? " · unavailable" : ""}
-                </option>
-              ))}
-            </Select>
-          </label>
+          <fieldset className="schedule-time">
+            <legend>{cadence === "hourly" ? "First run time" : "Time"}</legend>
+            <div className="schedule-time-parts">
+              <label>
+                Hour
+                <Select name="hour" required value={selectedHour} onChange={(event) => changeHour(event.target.value)}>
+                  {hourOptions.map(({ hour, minutes }) => (
+                    <option key={hour} value={hour} disabled={!minutes.some(isFutureMinute)}>{hour}</option>
+                  ))}
+                </Select>
+              </label>
+              <label>
+                Minute
+                <Select name="minute" required value={selectedMinute} onChange={(event) => setTime(`${selectedHour}:${event.target.value}`)}>
+                  {minuteOptions.map((option) => (
+                    <option key={option.time} value={option.time.slice(3)} disabled={!isFutureMinute(option)}>
+                      {option.time.slice(3)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            </div>
+          </fieldset>
           <label>
             Timezone
             <Select name="timezone" required value={timezone} onChange={(event) => setTimezone(event.target.value)}>
