@@ -62,6 +62,6 @@ npm run typecheck
 npm --prefix web run build
 ```
 
-The verified version passes **108 backend tests and 162 interface tests**. Tests use synthetic fixtures, local databases and mocked or local HTTP services. They cover matching, billing preservation, duplicates, stale approvals, uncertain writes, reruns, restart recovery, recurrence and interface recovery. See [verification summary](docs/VERIFICATION.md).
+The verified version passes **108 backend tests and 165 interface tests**. Tests use synthetic fixtures, local databases and mocked or local HTTP services. They cover matching, billing preservation, duplicates, stale approvals, uncertain writes, reruns, restart recovery, recurrence and interface recovery. See [verification summary](docs/VERIFICATION.md).
 
 Built with TypeScript, Node 24, Express, SQLite, React and Vite. AI assisted implementation and review. Reused UI components are documented in [Tool Rack provenance](docs/TOOL-RACK-PROVENANCE.md).
