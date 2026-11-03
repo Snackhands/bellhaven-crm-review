@@ -1,0 +1,8 @@
+# Check all enabled schedules once per minute. No approval or CRM writes.
+# Run `pwd` in your checkout, then replace /absolute/path/to/project below.
+# Install this entry only once, even when several schedules are enabled.
+# Each saved schedule supplies its cadence, date bounds and IANA timezone.
+* * * * * cd /absolute/path/to/project && /absolute/path/to/node/bin/npm run schedule:tick
+# The command uses the running local server when available; otherwise it opens
+# the private state database under the normal process lock and waits for its scan.
+# Missed minutes are not backfilled. DST gaps skip; folds run once, at the first time.

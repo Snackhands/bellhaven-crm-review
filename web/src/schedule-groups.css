@@ -1,0 +1,39 @@
+.schedule-groups {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+.schedule-groups .schedule-group-toggle {
+  width: 100%;
+  padding: 7px 3px;
+  justify-content: flex-start;
+  gap: 7px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.schedule-groups .schedule-group-toggle:hover {
+  background: #c7d5bd66;
+  box-shadow: none;
+  color: var(--forest);
+}
+.schedule-groups .schedule-group-toggle[aria-expanded="false"] > svg {
+  transform: rotate(-90deg);
+}
+.schedule-groups .schedule-group-toggle[aria-expanded="true"] > svg {
+  transform: rotate(0);
+}
+.schedule-groups .schedule-group-count {
+  margin-left: auto;
+  min-width: 19px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background: #c7d5bd66;
+  color: var(--forest);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@tool-shed/tool-rack",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "description": "Scoped neutral Select, QueueDatePicker and DialogSurface/motion runtime subset.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "sideEffects": [
+    "./src/styles.css"
+  ],
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20"
+  },
+  "files": [
+    "src"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "bellhaven-crm-review",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "start": "npm run build && tsx server/index.ts",
+    "dev": "tsx watch server/index.ts",
+    "build": "npm --prefix web run build",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "scan": "tsx server/cli.ts scan",
+    "schedule:tick": "tsx server/schedule-cli.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
